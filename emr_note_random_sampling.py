@@ -91,13 +91,13 @@ for i in range(len(dept_cd_tuple)):
                                                     )
                                     )                                                           --"Entity(Attr.포함)"
                                 ,  c.LFSD_VALE_VL || nvl(c.VALE_VL, dbms_lob.substr(c.EMR_SRCH_ITM_CD_CTN, 4000, 1)) || c.RGSD_VALE_VL	--"Value"
-                            from  입원접수이력  a
-                                ,  MEDOCMBST b
-                                ,  MEDOCSRCT c
-                                ,  MEFORITMT d
-                                ,  METRDCTMT e
-                                ,  MEFORITMT h
-                                ,  MEFORITMT i
+                            from   입원접수마스터  a
+                                ,  진료이력 b
+                                ,  EMR검색 c
+                                ,  EMR아이템 d
+                                ,  용어(val) e
+                                ,  용어(atrb) f
+                                ,  용어(entt) g
                             where  1=1
                             --and  a.PATNO             = '00093962'
                             and  a.ACPTNO            = :acptno
