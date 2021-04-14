@@ -48,10 +48,10 @@ for i in range(len(dept_cd_tuple)):
     query4acptno = """select acptno
                     from 입원접수마스터
                     where rejtdate is null
-                    and admdate between trunc(sysdate) - 30 and trunc(sysdate) - 23
+                    and admdate between trunc(sysdate) - 60 and trunc(sysdate) - 30
                     and meddept = :deptcd
                     and dschdate is not null
-                    and rownum = 1
+                    and rownum <= 10
                     """
     cursor.execute(query4acptno, deptcd=str(dept_cd_tuple[i]).replace(',','').replace('(', '').replace(')', '').replace("'", ''))
 
