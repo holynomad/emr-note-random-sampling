@@ -98,16 +98,13 @@ for i in range(len(dept_cd_tuple)):
                                 ,  용어(val) e
                                 ,  용어(atrb) f
                                 ,  용어(entt) g
-                            where  1=1
-                            --and  a.PATNO             = '00093962'
+                            where  1=1                            
                             and  a.ACPTNO            = :acptno
                             and  a.REJTDATE         is null
                             and  b.PTNO              = a.PATNO
                             and  b.MDRP_NO           = a.ACPTNO
                             and  b.DLTN_YN           = 'N'
-                            and  b.RCKI_CD           = '142'   -- op note
-                            --and  b.RCRD_DT           between to_date('20201210', 'yyyymmdd')
-                            --                                and trunc(sysdate)
+                            and  b.RCKI_CD           = '142'   -- op note                            
                             and  c.RCRD_NO           = b.RCRD_NO
                             and  d.SPRN_DPRT_CD      = 'MRD'
                             and  d.FORM_NO           = c.FORM_NO
