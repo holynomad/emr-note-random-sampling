@@ -76,7 +76,7 @@ for i in range(len(dept_cd_tuple)):
                                                     (
                                                     select
                                                             listagg(ss.TRMN_NM, '->') within group(order by ss.FORM_ITM_SNO)
-                                                        from  MEFORITMT ss
+                                                        from  EMR서식마스터 ss
                                                     where  1=1
                                                         and  ss.FORM_ITM_ID      <> c.EMR_SRCH_ITM_ID  -- 시작 아이템 제거
                                                         and  ss.HGRN_FORM_ITM_ID is not null           -- 아이템 그룹 포함
@@ -91,7 +91,7 @@ for i in range(len(dept_cd_tuple)):
                                                     )
                                     )                                                           --"Entity(Attr.포함)"
                                 ,  c.LFSD_VALE_VL || nvl(c.VALE_VL, dbms_lob.substr(c.EMR_SRCH_ITM_CD_CTN, 4000, 1)) || c.RGSD_VALE_VL	--"Value"
-                            from  APIPDLST  a
+                            from  입원접수이력  a
                                 ,  MEDOCMBST b
                                 ,  MEDOCSRCT c
                                 ,  MEFORITMT d
