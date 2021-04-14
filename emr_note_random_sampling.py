@@ -55,7 +55,7 @@ for i in range(len(dept_cd_tuple)):
                     """
     cursor.execute(query4acptno, deptcd=str(dept_cd_tuple[i]).replace(',','').replace('(', '').replace(')', '').replace("'", ''))
 
-    result4acptno = cursor.fetchone()
+    result4acptno = cursor.fetchall()
 
     print("#######################")
     #print(type(dept_cd_tuple[0]))
@@ -65,61 +65,99 @@ for i in range(len(dept_cd_tuple)):
     if result4acptno != None:
         print(str(dept_cd_tuple[i]).replace(',','').replace('(', '').replace(')', '') + " starts !")
 
-        queryTerm = """select
-                               a.PATNO		
-                            ,  a.FSTDEPT	
-                            ,  a.ADMDATE 	
-                            ,  d.CPNT_NM	
-                            ,  nvl(g.TRMN_NM, d.MNDT_ITEM_NM)	
-                            ,  f.TRMN_NM	                                                        
-                            ,  c.LFSD_VALE_VL || nvl(c.VALE_VL, dbms_lob.substr(c.EMR_SRCH_ITM_CD_CTN, 3600, 1)) || c.RGSD_VALE_VL 
-                        from   입원접수마스터  a
-                            ,  진료이력 b
-                            ,  EMR검색 c
-                            ,  EMR아이템 d
-                            ,  용어(val) e
-                            ,  용어(atrb) f
-                            ,  용어(entt) g
-                        where  1=1                        
-                        and  a.REJTDATE         is null 
-                        and	b.MDRP_NO 			= :acptno
-                        and  b.PTNO              = a.PATNO
-                        and  b.MDRP_NO           = a.ACPTNO
-                        and  b.DLTN_YN           = 'N'
-                        and  b.RCKI_CD           = '999' -- admission note                        
-                        and  c.RCRD_NO           = b.RCRD_NO
-                        and  d.SPRN_DPRT_CD      = 'MRD'
-                        and  d.FORM_NO           = c.FORM_NO
-                        and  d.FORM_ITM_ID       = c.EMR_SRCH_ITM_ID
-                        and  e.TRMN_ID           = d.TRMN_ID                        
-                        and  f.TRMN_ID(+)        = d.EAV_ATRB_TRMN_ID
-                        and  g.TRMN_ID(+)        = d.EAV_ENTT_TRMN_ID
-        """
+        for j in range(len(result4acptno)):
 
-        cursor.execute(queryTerm, acptno=int(result4acptno[0]))
+            queryTerm = """select
+                                    a.PATNO
+                                ,   a.FSTDEPT
+                                ,   a.ADMDATE
+                                ,	b.RCRD_DT
+                                ,	nvl(h.CPT_NM,
+                                                    (
+                                                    select
+                                                            listagg(ss.TRMN_NM, '->') within group(order by ss.FORM_ITM_SNO)
+                                                        from  MEFORITMT ss
+                                                    where  1=1
+                                                        and  ss.FORM_ITM_ID      <> c.EMR_SRCH_ITM_ID  -- 시작 아이템 제거
+                                                        and  ss.HGRN_FORM_ITM_ID is not null           -- 아이템 그룹 포함
+                                                    start  with
+                                                            ss.SPRN_DPRT_CD  = 'MRD'
+                                                        and  ss.FORM_NO       = c.FORM_NO
+                                                        and  ss.FORM_ITM_ID   = c.EMR_SRCH_ITM_ID
+                                                    connect  by nocycle
+                                                            ss.SPRN_DPRT_CD  = prior ss.SPRN_DPRT_CD
+                                                        and  ss.FORM_NO       = prior ss.FORM_NO
+                                                        and  ss.FORM_ITM_ID   = prior ss.HGRN_FORM_ITM_ID
+                                                    )
+                                    )                                                           --"Entity(Attr.포함)"
+                                ,  c.LFSD_VALE_VL || nvl(c.VALE_VL, dbms_lob.substr(c.EMR_SRCH_ITM_CD_CTN, 4000, 1)) || c.RGSD_VALE_VL	--"Value"
+                            from  APIPDLST  a
+                                ,  MEDOCMBST b
+                                ,  MEDOCSRCT c
+                                ,  MEFORITMT d
+                                ,  METRDCTMT e
+                                ,  MEFORITMT h
+                                ,  MEFORITMT i
+                            where  1=1
+                            --and  a.PATNO             = '00093962'
+                            and  a.ACPTNO            = :acptno
+                            and  a.REJTDATE         is null
+                            and  b.PTNO              = a.PATNO
+                            and  b.MDRP_NO           = a.ACPTNO
+                            and  b.DLTN_YN           = 'N'
+                            and  b.RCKI_CD           = '142'   -- op note
+                            --and  b.RCRD_DT           between to_date('20201210', 'yyyymmdd')
+                            --                                and trunc(sysdate)
+                            and  c.RCRD_NO           = b.RCRD_NO
+                            and  d.SPRN_DPRT_CD      = 'MRD'
+                            and  d.FORM_NO           = c.FORM_NO
+                            and  d.FORM_ITM_ID       = c.EMR_SRCH_ITM_ID
+                            and  e.TRMN_ID			= d.TRMN_ID
+                            and 	h.SPRN_DPRT_CD(+)      = 'MRD'
+                            and 	h.FORM_NO(+)           = d.FORM_NO
+                            and 	h.FORM_ITM_ID(+)       = d.HGRN_FORM_ITM_ID
+                            and	h.HGRN_FORM_ITM_ID(+) is null
+                            and 	i.SPRN_DPRT_CD(+)      = 'MRD'
+                            and 	i.FORM_NO(+)           = d.FORM_NO
+                            and 	i.FORM_ITM_ID(+)       = d.HGRN_FORM_ITM_ID
+                            and	i.HGRN_FORM_ITM_ID(+) is not null
+                            order by d.FORM_ITM_SNO                                 
+            """
 
-        result = cursor.fetchall()
+            try:
+                cursor.execute(queryTerm, acptno=int(str(result4acptno[j]).replace(',','').replace('(', '').replace(')', '').replace("'", '')))
 
-        df = pd.DataFrame(result)
+                result = cursor.fetchall()
 
-        # 컬럼 붙여주기 
-        df.columns = ['PAT_ID', 'DEPT_CD', 'ADM_DATE', 'CPMT', 'ENTITY', 'ATTR', 'VALUE']
+                #print(str(len(result)))
 
-        #print(df)
+            # buffer 관련 db 오류 이력남기고 pass @ 2021.04.14.
+            except Exception as e:
+                print(e)
+                continue
 
-        # 참조: https://hogni.tistory.com/10
-        try: 
-            if not os.path.exists('./output.csv'):
-                df.to_csv("./output.csv", index=False, mode='w', encoding="utf-8-sig")     
-                print('first write finished successfuly')                 
-            else:
-                df.to_csv("./output.csv", index=False, mode='a', encoding="utf-8-sig", header=False)     
-                print('concatanation finished successfuly') 
-            
-        except Exception as e: 
-            df.to_csv("./raised_error.csv", index=False, encoding="utf-8-sig") 
-            print('DataFrame append error!!!! please check it out. : ', e) 
-            break
+            # 수술이력 진료접수번호는 존재하지만 실제 EMR 기록이 없는경우 예외처리 @ 2021.04.14.
+            if len(result) != 0 :
+                df = pd.DataFrame(result)
+
+                # 컬럼 붙여주기 
+                df.columns = ['PAT_ID', 'DEPT_CD', 'ADM_DATE', 'RGT_DATE', 'ENTITY', 'VALUE']
+
+                #print(df)
+
+                # 출처: https://hogni.tistory.com/10
+                try: 
+                    if not os.path.exists('./op_note_output.csv'):
+                        df.to_csv("./op_note_output.csv", index=False, mode='w', encoding="utf-8-sig")     
+                        print('first write finished successfuly')                 
+                    else:
+                        df.to_csv("./op_note_output.csv", index=False, mode='a', encoding="utf-8-sig", header=False)     
+                        print('concatanation finished successfuly') 
+                    
+                except Exception as e: 
+                    df.to_csv("./op_raised_error.csv", index=False, encoding="utf-8-sig") 
+                    print('DataFrame append error!!!! please check it out. : ', e) 
+                    break
 
     else:
         print(str(dept_cd_tuple[i]).replace(',','').replace('(', '').replace(')', '') + " skipped....")
